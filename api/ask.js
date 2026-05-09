@@ -12,7 +12,7 @@ export default async function handler(req, res) {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer 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`,
-        'HTTP-Referer': 'https://divination.vercel.app',
+        'HTTP-Referer': 'https://divination-gules-two.vercel.app',
         'X-Title': '此时此刻'
       },
       body: JSON.stringify({
