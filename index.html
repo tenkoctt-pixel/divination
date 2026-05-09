@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>此时此刻 · 现在告诉我答案</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root { --gold:#c9a84c; --gold-light:#e8d08a; --dark:#0a0812; --card:rgba(255,255,255,0.04); --border:rgba(201,168,76,0.25); }
+
+  body {
+    font-family:'Noto Serif SC', serif;
+    background:var(--dark);
+    color:#e8e0d0;
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+
+  /* Stars background */
+  .stars { position:fixed; inset:0; z-index:0; pointer-events:none; }
+  .star { position:absolute; border-radius:50%; background:#fff; animation:twinkle var(--d) infinite; }
+  @keyframes twinkle { 0%,100%{opacity:var(--min)} 50%{opacity:var(--max)} }
+
+  .wrap { position:relative; z-index:1; max-width:480px; margin:0 auto; padding:40px 20px 60px; }
+
+  /* Header */
+  .title-wrap { text-align:center; margin-bottom:40px; }
+  .title-cn { font-size:28px; font-weight:300; letter-spacing:8px; color:var(--gold-light); }
+  .title-sub { font-size:12px; letter-spacing:4px; color:rgba(201,168,76,0.6); margin-top:8px; }
+  .divider { width:60px; height:1px; background:linear-gradient(90deg,transparent,var(--gold),transparent); margin:16px auto; }
+
+  /* Form */
+  .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:24px; margin-bottom:16px; backdrop-filter:blur(10px); }
+  .field-label { font-size:11px; letter-spacing:3px; color:var(--gold); margin-bottom:10px; display:block; }
+  input, select, textarea {
+    width:100%; background:rgba(255,255,255,0.04); border:1px solid var(--border);
+    border-radius:8px; padding:12px 14px; color:#e8e0d0; font-family:inherit;
+    font-size:14px; outline:none; transition:border-color .2s;
+  }
+  input:focus, select:focus, textarea:focus { border-color:var(--gold); }
+  select option { background:#1a1428; }
+  textarea { resize:none; min-height:80px; line-height:1.8; }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+  /* Time display */
+  .time-now { text-align:center; padding:16px; border:1px solid var(--border); border-radius:12px; margin-bottom:16px; }
+  .time-big { font-size:32px; letter-spacing:4px; color:var(--gold-light); font-weight:300; }
+  .time-date { font-size:12px; color:rgba(201,168,76,0.6); margin-top:4px; letter-spacing:2px; }
+
+  /* Button */
+  .btn { width:100%; padding:16px; background:linear-gradient(135deg,#8b6914,#c9a84c,#8b6914); border:none; border-radius:12px; color:#0a0812; font-family:inherit; font-size:15px; font-weight:600; letter-spacing:3px; cursor:pointer; transition:opacity .2s; position:relative; overflow:hidden; }
+  .btn:active { opacity:0.85; }
+  .btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+  /* Result */
+  .result-wrap { display:none; margin-top:24px; }
+  .result-wrap.show { display:block; }
+  .result-card { background:rgba(201,168,76,0.05); border:1px solid var(--border); border-radius:16px; padding:28px; position:relative; }
+  .result-card::before { content:'☽ ✦ ☾'; display:block; text-align:center; font-size:18px; color:var(--gold); margin-bottom:20px; letter-spacing:8px; }
+  .result-text { font-size:15px; line-height:2; color:#e8e0d0; white-space:pre-wrap; }
+  .result-footer { text-align:center; margin-top:20px; font-size:11px; color:rgba(201,168,76,0.4); letter-spacing:2px; }
+
+  /* Loading */
+  .loading { display:none; text-align:center; padding:40px 20px; }
+  .loading.show { display:block; }
+  .orb { width:60px; height:60px; border-radius:50%; background:radial-gradient(circle at 35% 35%, #e8d08a, #8b6914, #2a1a05); margin:0 auto 20px; animation:pulse 2s infinite; box-shadow:0 0 30px rgba(201,168,76,0.4); }
+  @keyframes pulse { 0%,100%{transform:scale(1);box-shadow:0 0 30px rgba(201,168,76,0.4)} 50%{transform:scale(1.1);box-shadow:0 0 50px rgba(201,168,76,0.7)} }
+  .loading-text { font-size:13px; color:var(--gold); letter-spacing:3px; animation:fade 1.5s infinite; }
+  @keyframes fade { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+  .again-btn { width:100%; margin-top:16px; padding:12px; background:transparent; border:1px solid var(--border); border-radius:10px; color:var(--gold); font-family:inherit; font-size:13px; letter-spacing:2px; cursor:pointer; }
+
+  .zodiac-hint { font-size:11px; color:rgba(201,168,76,0.45); margin-top:6px; letter-spacing:1px; }
+</style>
+</head>
+<body>
+
+<div class="stars" id="stars"></div>
+
+<div class="wrap">
+  <div class="title-wrap">
+    <div class="title-cn">此时此刻</div>
+    <div class="divider"></div>
+    <div class="title-sub">现在告诉我答案</div>
+  </div>
+
+  <!-- 当前时间 -->
+  <div class="time-now">
+    <div class="time-big" id="timeBig">--:--:--</div>
+    <div class="time-date" id="timeDate">感应中...</div>
+  </div>
+
+  <!-- 表单 -->
+  <div class="card">
+    <label class="field-label">✦ 你的生辰</label>
+    <div class="row2">
+      <div>
+        <input type="date" id="birthday" placeholder="出生日期">
+      </div>
+      <div>
+        <input type="time" id="birthtime" placeholder="出生时辰（选填）">
+      </div>
+    </div>
+    <div class="zodiac-hint" id="zodiacHint"></div>
+  </div>
+
+  <div class="card">
+    <label class="field-label">✦ 你想问的事</label>
+    <textarea id="question" placeholder="此刻心中最想知道答案的那个问题&#10;说出来，星辰会听见..."></textarea>
+  </div>
+
+  <button class="btn" id="askBtn" onclick="doAsk()">▽ 启动占卜 ▽</button>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="orb"></div>
+    <div class="loading-text">星辰正在感应...</div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-wrap" id="resultWrap">
+    <div class="result-card">
+      <div class="result-text" id="resultText"></div>
+      <div class="result-footer" id="resultFooter"></div>
+    </div>
+    <button class="again-btn" onclick="resetForm()">↺ 再问一次</button>
+  </div>
+</div>
+
+<script>
+// ── 星空背景 ──
+const starsEl = document.getElementById('stars');
+for (let i = 0; i < 120; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  const sz = Math.random() * 2 + 0.5;
+  s.style.cssText = `width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${2+Math.random()*4}s;--min:${0.1+Math.random()*0.2};--max:${0.5+Math.random()*0.5}`;
+  starsEl.appendChild(s);
+}
+
+// ── 实时时钟 ──
+const DAYS = ['日','一','二','三','四','五','六'];
+const MONTHS_CN = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('timeBig').textContent = `${h}:${m}:${s}`;
+  document.getElementById('timeDate').textContent = `${now.getFullYear()} · ${MONTHS_CN[now.getMonth()]} · 周${DAYS[now.getDay()]}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── 星座推算 ──
+function getZodiac(date) {
+  if (!date) return '';
+  const d = new Date(date);
+  const m = d.getMonth() + 1, day = d.getDate();
+  const signs = [
+    [1,20,'摩羯座♑'],[2,19,'水瓶座♒'],[3,21,'双鱼座♓'],[4,20,'白羊座♈'],
+    [5,21,'金牛座♉'],[6,21,'双子座♊'],[7,23,'巨蟹座♋'],[8,23,'狮子座♌'],
+    [9,23,'处女座♍'],[10,23,'天秤座♎'],[11,22,'天蝎座♏'],[12,22,'射手座♐'],[12,31,'摩羯座♑']
+  ];
+  for (const [sm, sd, name] of signs) {
+    if (m < sm || (m === sm && day <= sd)) return name;
+  }
+  return '摩羯座♑';
+}
+
+document.getElementById('birthday').addEventListener('change', function() {
+  const z = getZodiac(this.value);
+  document.getElementById('zodiacHint').textContent = z ? `✦ ${z}` : '';
+});
+
+// ── 占卜 ──
+async function doAsk() {
+  const birthday = document.getElementById('birthday').value;
+  const birthtime = document.getElementById('birthtime').value;
+  const question = document.getElementById('question').value.trim();
+
+  if (!birthday) { alert('请填写你的生日'); return; }
+  if (!question) { alert('请写下你想问的问题'); return; }
+
+  const now = new Date();
+  const zodiac = getZodiac(birthday);
+  const timeStr = now.toLocaleString('zh-CN', {year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',weekday:'long'});
+  const lunarHour = getLunarHour(now.getHours());
+
+  document.getElementById('askBtn').disabled = true;
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('resultWrap').classList.remove('show');
+
+  const prompt = `你是一位精通东方玄学与西方占星的神秘占卜师，融合紫微斗数、生辰八字、星座能量与时辰感应，为问卜者解读此刻的天机。
+
+问卜者信息：
+- 出生日期：${birthday}${birthtime ? '，出生时辰：' + birthtime : ''}
+- 星座：${zodiac}
+- 问卜时刻：${timeStr}（${lunarHour}时）
+- 所问之事：${question}
+
+请结合以上信息，用神秘而有温度的语言，给出一段占卜解读。要求：
+1. 先感应此刻时间与星象的能量特质（2-3句）
+2. 结合问卜者的星座与生辰特质分析（2-3句）
+3. 针对所问之事给出清晰的指引与建议（3-4句）
+4. 以一句有力量的话收尾
+
+语气：神秘、笃定、有温度，像真正的占卜师在说话，不要用"我"开头，不要说"根据你的信息"，直接进入感应状态。字数在200字以内。`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '星辰暂时沉默，请稍后再试。';
+
+    document.getElementById('resultText').textContent = text;
+    document.getElementById('resultFooter').textContent = `${timeStr} · ${zodiac}`;
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('resultWrap').classList.add('show');
+  } catch(e) {
+    document.getElementById('loading').classList.remove('show');
+    alert('占卜连接失败，请检查网络后再试');
+  }
+  document.getElementById('askBtn').disabled = false;
+}
+
+// ── 时辰 ──
+function getLunarHour(h) {
+  const hours = ['子','丑','丑','寅','寅','卯','卯','辰','辰','巳','巳','午','午','未','未','申','申','酉','酉','戌','戌','亥','亥','子'];
+  return hours[h];
+}
+
+function resetForm() {
+  document.getElementById('resultWrap').classList.remove('show');
+  document.getElementById('question').value = '';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+</script>
+</body>
+</html>
