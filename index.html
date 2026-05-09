@@ -209,17 +209,22 @@ async function doAsk() {
 语气：神秘、笃定、有温度，像真正的占卜师在说话，不要用"我"开头，不要说"根据你的信息"，直接进入感应状态。字数在200字以内。`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer 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',
+        'HTTP-Referer': 'https://divination.app',
+        'X-Title': '此时此刻'
+      },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'anthropic/claude-sonnet-4-5',
         max_tokens: 1000,
         messages: [{ role: 'user', content: prompt }]
       })
     });
     const data = await res.json();
-    const text = data.content?.[0]?.text || '星辰暂时沉默，请稍后再试。';
+    const text = data.choices?.[0]?.message?.content || '星辰暂时沉默，请稍后再试。';
 
     document.getElementById('resultText').textContent = text;
     document.getElementById('resultFooter').textContent = `${timeStr} · ${zodiac}`;
